@@ -15,14 +15,14 @@ const DB_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DB_DIR, 'users.json');
 const SESSION_MS = 24 * 60 * 60 * 1000;
 
-const ID_RE = /^[A-Za-z0-9_]{4,20}$/;
+const ID_RE = /^[\p{L}\p{N}_]+$/u; // 글자·숫자·_ (길이 제한 없음, 공백 불가)
 const sessions = new Map(); // token -> { name, exp }
 const hits = new Map();     // `${ip}:${bucket}` -> { n, reset }
 
 // ---------- 저장소 ----------
 fs.mkdirSync(DB_DIR, { recursive: true });
-let users = {};
-try { users = JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); } catch { users = {}; }
+let users = Object.create(null); // '__proto__' 같은 아이디가 객체를 오염시키지 않도록
+try { Object.assign(users, JSON.parse(fs.readFileSync(DB_FILE, 'utf8'))); } catch { /* 새 DB */ }
 function saveUsers() {
   const tmp = DB_FILE + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(users), { mode: 0o600 });
@@ -111,7 +111,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && (url === '/api/register' || url === '/api/login')) {
     let body;
     try { body = await readJson(req); } catch { return send(res, 400, { error: '잘못된 요청입니다.' }); }
-    const name = typeof body.username === 'string' ? body.username.trim() : '';
+    const name = typeof body.username === 'string' ? body.username.trim().normalize('NFC') : '';
     const pw = typeof body.password === 'string' ? body.password : '';
     const key = name.toLowerCase();
     const addr = ip(req);
@@ -119,7 +119,7 @@ const server = http.createServer(async (req, res) => {
     if (url === '/api/register') {
       if (limited(addr, 'reg', 5)) return send(res, 429, { error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
       addHit(addr, 'reg');
-      if (!ID_RE.test(name)) return send(res, 400, { field: 'username', error: '아이디는 영문, 숫자, _ 조합 4~20자로 입력해 주세요.' });
+      if (!name || !ID_RE.test(name)) return send(res, 400, { field: 'username', error: '아이디는 글자, 숫자, _ 만 사용할 수 있습니다. (공백 불가)' });
       if (pw.length < 8 || pw.length > 64 || !/[A-Za-z]/.test(pw) || !/\d/.test(pw))
         return send(res, 400, { field: 'password', error: '비밀번호는 영문과 숫자를 포함한 8~64자로 입력해 주세요.' });
       const salt = crypto.randomBytes(16);
