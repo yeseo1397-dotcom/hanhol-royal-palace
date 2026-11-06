@@ -199,7 +199,7 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
 
       <div class="field" id="f-id">
         <label for="uid">ID</label>
-        <div class="inp"><input id="uid" name="username" type="text" placeholder="아이디" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" aria-describedby="e-id"></div>
+        <div class="inp"><input id="uid" name="username" type="text" placeholder="아이디" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="e-id"></div>
         <span class="ferr" id="e-id"></span>
       </div>
 
@@ -243,7 +243,7 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
   var form=$('#form'), uid=$('#uid'), pw=$('#pw'), pw2=$('#pw2');
   var go=$('#go'), swap=$('#swap'), alertBox=$('#alert');
   var mode='login', busy=false;
-  var ID_RE=/^[A-Za-z0-9_]{4,20}$/;
+  var ID_RE=/^[\p{L}\p{N}_]+$/u;
 
   function setErr(field, msg){
     var map={id:['#f-id','#e-id'], pw:['#f-pw','#e-pw'], pw2:['#f-pw2','#e-pw2']}[field];
@@ -288,7 +288,7 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
   function validate(){
     var ok = true, id = uid.value.trim(), p = pw.value;
     if (!id){ setErr('id','아이디를 입력해 주세요.'); ok = false; }
-    else if (mode === 'register' && !ID_RE.test(id)){ setErr('id','아이디는 영문, 숫자, _ 조합 4~20자로 입력해 주세요.'); ok = false; }
+    else if (mode === 'register' && !ID_RE.test(id)){ setErr('id','아이디는 글자, 숫자, _ 만 사용할 수 있습니다. (공백 불가)'); ok = false; }
     if (!p){ setErr('pw','비밀번호를 입력해 주세요.'); ok = false; }
     else if (mode === 'register' && (p.length < 8 || !/[A-Za-z]/.test(p) || !/\d/.test(p))){
       setErr('pw','비밀번호는 영문과 숫자를 포함한 8자 이상이어야 합니다.'); ok = false; }
