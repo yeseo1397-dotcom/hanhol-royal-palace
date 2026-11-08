@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ROYAL PALACE · 777 Roulette</title>
+<meta name="theme-color" content="#0a0707">
+<link rel="stylesheet" href="/theme.css">
+<style>
+.back{display:inline-block;margin-bottom:6px;color:var(--gold);text-decoration:none;font-size:13px;letter-spacing:.12em}
+.back:hover,.back:focus-visible{color:var(--gold-hi);outline:none;text-decoration:underline}
+.ttl{text-align:center;font-family:var(--serif);font-weight:700;letter-spacing:.16em;line-height:1.1;
+  font-size:clamp(28px,8vw,48px);filter:drop-shadow(0 2px 0 rgba(0,0,0,.7)) drop-shadow(0 0 18px rgba(212,175,55,.3))}
+.ttl span{display:block;font-size:.5em;letter-spacing:.42em;padding-left:.42em;margin-top:.2em}
+
+.wheel-wrap{width:min(92vw,440px);margin:clamp(8px,2vw,18px) auto 0}
+.wheel-wrap svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 14px 30px rgba(0,0,0,.7))}
+#wheel{transform-origin:0 0}
+.bulb{fill:#f6e3a1;animation:blink 1.6s steps(1) infinite}
+.bulb.b{animation-delay:.8s}
+.spinning .bulb{animation-duration:.4s}.spinning .bulb.b{animation-delay:.2s}
+@keyframes blink{0%{opacity:1}50%{opacity:.25}}
+
+.result{min-height:78px;margin:6px 0 14px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  font-family:var(--serif);letter-spacing:.08em}
+.result .lbl{font-size:clamp(14px,3.6vw,17px);letter-spacing:.3em;color:#b9a98b}
+.result .amt{font-size:clamp(26px,7vw,38px);font-weight:700}
+.result.idle .lbl{font-family:var(--sans);letter-spacing:.04em;font-size:14px}
+.result.win .amt{background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(246,227,161,.45))}
+.result.win .lbl{color:var(--gold-hi)}
+.result.lose .amt{color:#ff8a9a}
+.result.push .amt{color:#cdbd9b}
+.result.err .lbl{color:#ffd7dd;font-family:var(--sans);letter-spacing:.02em;font-size:14px}
+
+.ctl .row-l{font-family:var(--serif);letter-spacing:.3em;font-size:12px;color:var(--gold);margin-bottom:10px;text-align:center}
+.bets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.bet{height:46px;padding:0 2px;font-family:var(--serif);font-weight:700;font-size:clamp(11px,3vw,14px);letter-spacing:.02em;cursor:pointer;
+  color:var(--gold-hi);background:rgba(0,0,0,.55);border:1px solid rgba(212,175,55,.45);border-radius:2px;transition:background .2s,border-color .2s,color .2s}
+.bet:hover:not(:disabled){border-color:var(--gold-hi)}
+.bet:focus-visible{outline:2px solid var(--gold-hi);outline-offset:2px}
+.bet.on{background:linear-gradient(180deg,var(--burg-hi),var(--burg));border-color:var(--gold-hi);color:#fff;box-shadow:0 0 16px rgba(155,27,48,.55)}
+.bet:disabled{opacity:.35;cursor:not-allowed}
+#spin{margin-top:0}
+.broke{margin-top:16px;text-align:center;font-size:14px;color:#ffd7dd}
+.broke .btn{margin-top:10px;height:46px}
+
+.pay{margin-top:18px;padding:0}
+.pay summary{cursor:pointer;list-style:none;padding:16px 20px;text-align:center;font-family:var(--serif);letter-spacing:.24em;font-size:13px;color:var(--gold-hi)}
+.pay summary::-webkit-details-marker{display:none}
+.pay summary::after{content:" ▾"}
+.pay[open] summary::after{content:" ▴"}
+.pay .in{padding:0 20px 18px}
+.pay table{width:100%;border-collapse:collapse;font-size:14px}
+.pay th{font-size:11px;letter-spacing:.14em;color:#9d8e72;font-weight:400;text-align:right;padding:6px 4px}
+.pay th:first-child,.pay td:first-child{text-align:left}
+.pay td{padding:8px 4px;border-top:1px solid rgba(212,175,55,.16);text-align:right;color:#e0d2b2}
+.pay td:first-child{font-family:var(--serif);font-weight:700;color:var(--gold-hi)}
+.pay tr.jp td:first-child{color:#ff8a9a}
+.pay .rtp{margin-top:12px;text-align:center;font-size:12.5px;color:#9d8e72;line-height:1.6}
+
+.recent{margin-top:18px;text-align:center}
+.recent .row-l{font-family:var(--serif);letter-spacing:.3em;font-size:12px;color:var(--gold);margin-bottom:10px}
+.dots{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;min-height:30px}
+.dot{min-width:42px;padding:4px 8px;font-family:var(--serif);font-weight:700;font-size:12px;border:1px solid rgba(212,175,55,.4);color:#8d7f66;background:rgba(0,0,0,.45)}
+.dot.up{color:var(--gold-hi);border-color:var(--gold)}
+.dot.jp{background:var(--burg);color:#fff;border-color:var(--gold-hi)}
+.foot{margin-top:22px;text-align:center;font-size:12px;color:#7d705b;line-height:1.6}
+
+.jackpot{position:fixed;inset:0;z-index:40;display:grid;place-items:center;text-align:center;padding:20px;
+  background:radial-gradient(circle at 50% 45%,rgba(118,16,34,.95),rgba(0,0,0,.97) 75%);animation:fadein .4s}
+.jackpot .big{font-family:var(--serif);font-weight:700;font-size:clamp(84px,26vw,190px);line-height:1;letter-spacing:.06em;
+  background:var(--gold-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 30px rgba(246,227,161,.7));animation:pulse 1.2s ease-in-out infinite alternate}
+.jackpot .sub{font-family:var(--serif);letter-spacing:.5em;padding-left:.5em;font-size:clamp(16px,4.6vw,28px);color:var(--gold-hi);margin-top:6px}
+.jackpot .amt{font-family:var(--serif);font-weight:700;font-size:clamp(24px,7vw,44px);color:#fff;margin:18px 0 26px}
+.jackpot .btn{width:min(260px,80vw);margin:0 auto}
+.conf{position:fixed;top:-40px;z-index:41;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+@keyframes fadein{from{opacity:0}}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.bulb,.jackpot .big{animation:none!important}}
+</style>
+</head>
+<body>
+<main class="page narrow">
+  <a class="back" href="/lobby#luck">‹ LUCK GAMES</a>
+  <h1 class="ttl gold-text">777<span>ROULETTE</span></h1>
+
+  <div class="wheel-wrap"><svg id="svg" viewBox="-250 -270 500 520" role="img" aria-label="777 룰렛 휠"></svg></div>
+
+  <div class="result idle" id="result" role="status" aria-live="polite"><span class="lbl">베팅 금액을 고르고 SPIN을 눌러 주세요</span></div>
+
+  <section class="panel ctl">
+    <div class="row-l">BET</div>
+    <div class="bets" id="bets"></div>
+    <button class="btn gold" id="spin" type="button" disabled>SPIN</button>
+    <div class="broke" id="broke" hidden>
+      칩이 부족합니다.
+      <button class="btn ghost" id="refill" type="button">REFILL 1,000</button>
+    </div>
+  </section>
+
+  <details class="panel pay">
+    <summary>PAYTABLE · 배당표</summary>
+    <div class="in">
+      <table>
+        <thead><tr><th>배당</th><th>확률</th><th>지급</th></tr></thead>
+        <tbody id="pay"></tbody>
+      </table>
+      <p class="rtp" id="rtp"></p>
+    </div>
+  </details>
+
+  <section class="recent">
+    <div class="row-l">RECENT</div>
+    <div class="dots" id="dots"></div>
+  </section>
+
+  <p class="foot">가상 칩으로만 즐기는 게임입니다. 실제 금전과는 관계가 없습니다.</p>
+</main>
+
+<div class="jackpot" id="jackpot" hidden role="dialog" aria-modal="true" aria-label="777 잭팟">
+  <div>
+    <div class="big">777</div>
+    <div class="sub">JACKPOT</div>
+    <div class="amt" id="jp-amt"></div>
+    <button class="btn gold" id="jp-close" type="button">COLLECT</button>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+  var NS = 'http://www.w3.org/2000/svg';
+  var SERIF = "Cinzel,'Trajan Pro',Georgia,'Times New Roman',serif";
+
+  // 휠 칸 배치 (20칸, 위에서 시계 방향). 실제 확률은 서버가 정하고 배당표에 표시됩니다.
+  var SLICES = [777, 0, 0.5, 1, 0, 2, 0.5, 0, 3, 1, 0, 5, 0.5, 0, 2, 1, 0.5, 0, 3, 10];
+  var COLORS = {
+    '0': ['#150e0e', '#7a6a52'], '0.5': ['#6b0f1f', '#f6e3a1'], '1': ['#3a2a10', '#f6e3a1'],
+    '2': ['#8a6a1c', '#fff3c4'], '3': ['#b8922a', '#1a1204'], '5': ['#d4af37', '#1a1204'],
+    '10': ['#f6e3a1', '#6b0f1f'], '777': ['url(#jg)', '#6b0f1f']
+  };
+
+  var svg = $('#svg'), wheel, rot = 0;
+  var cfg = null, chips = 0, betMode = 100, busy = false, recent = [];
+
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function pt(r, deg) { var t = deg * Math.PI / 180; return [(r * Math.sin(t)).toFixed(2), (-r * Math.cos(t)).toFixed(2)]; }
+
+  // ---------- 휠 그리기 ----------
+  (function buildWheel() {
+    var defs = el('defs', {}, svg);
+    var gg = el('linearGradient', { id: 'gg', x1: 0, y1: 0, x2: 1, y2: 1 }, defs);
+    [['0', '#8a6a1c'], ['.35', '#f6e3a1'], ['.7', '#d4af37'], ['1', '#8a6a1c']].forEach(function (s) { el('stop', { offset: s[0], 'stop-color': s[1] }, gg); });
+    var jg = el('linearGradient', { id: 'jg', x1: 0, y1: 0, x2: 1, y2: 1 }, defs);
+    [['0', '#b8922a'], ['.5', '#fff3c4'], ['1', '#d4af37']].forEach(function (s) { el('stop', { offset: s[0], 'stop-color': s[1] }, jg); });
+
+    el('circle', { r: 246, fill: '#0b0707', stroke: '#000', 'stroke-width': 2 }, svg);
+    el('circle', { r: 232, fill: 'none', stroke: 'url(#gg)', 'stroke-width': 22 }, svg);
+    el('circle', { r: 221, fill: 'none', stroke: 'rgba(0,0,0,.6)', 'stroke-width': 2 }, svg);
+
+    wheel = el('g', { id: 'wheel' }, svg);
+    var R = 212, N = SLICES.length, A = 360 / N;
+    SLICES.forEach(function (m, i) {
+      var p0 = pt(R, i * A), p1 = pt(R, (i + 1) * A), c = COLORS[String(m)];
+      el('path', { d: 'M0 0L' + p0.join(' ') + 'A' + R + ' ' + R + ' 0 0 1 ' + p1.join(' ') + 'Z', fill: c[0], stroke: 'rgba(212,175,55,.75)', 'stroke-width': 1.5 }, wheel);
+      var g = el('g', { transform: 'rotate(' + (i * A + A / 2) + ')' }, wheel);
+      var t = el('text', { x: 0, y: -160, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-family': SERIF, 'font-weight': 700,
+        'font-size': m === 777 ? 25 : 21, fill: c[1] }, g);
+      t.textContent = m === 777 ? '777' : '×' + m;
+    });
+    el('circle', { r: R, fill: 'none', stroke: 'rgba(212,175,55,.8)', 'stroke-width': 2 }, wheel);
+
+    for (var i = 0; i < 20; i++) {
+      var p = pt(232, i * 18 + 9);
+      el('circle', { cx: p[0], cy: p[1], r: 4.4, 'class': 'bulb' + (i % 2 ? ' b' : '') }, svg);
+    }
+    // 중앙 허브 + 포인터 (회전하지 않음)
+    el('circle', { r: 40, fill: 'url(#gg)', stroke: '#fff3c4', 'stroke-width': 2 }, svg);
+    el('circle', { r: 30, fill: '#6b0f1f', stroke: '#f6e3a1', 'stroke-width': 1.5 }, svg);
+    var ht = el('text', { x: 0, y: 1, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-family': SERIF, 'font-weight': 700, 'font-size': 22, fill: '#f6e3a1' }, svg);
+    ht.textContent = '777';
+    el('path', { d: 'M-18 -268 L18 -268 L0 -214 Z', fill: 'url(#gg)', stroke: '#000', 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+    el('circle', { cx: 0, cy: -255, r: 5, fill: '#9b1b30', stroke: '#fff3c4', 'stroke-width': 1.5 }, svg);
+  })();
+
+  // ---------- 베팅 UI ----------
+  var betsBox = $('#bets'), spinBtn = $('#spin');
+
+  function currentBet() { return betMode === 'all' ? Math.min(chips, cfg.maxBet) : betMode; }
+  function normalizeBet() {
+    if (betMode !== 'all' && betMode > chips) {
+      var ok = [5000, 1000, 500, 100].filter(function (v) { return v <= chips; });
+      betMode = ok.length ? ok[0] : 'all';
+    }
+  }
+  function renderControls() {
+    betsBox.innerHTML = '';
+    [100, 500, 1000, 5000, 'all'].forEach(function (v) {
+      var b = document.createElement('button'), cost = v === 'all' ? Math.min(chips, cfg.maxBet) : v;
+      b.type = 'button';
+      b.className = 'bet' + (betMode === v ? ' on' : '');
+      b.textContent = v === 'all' ? 'ALL IN' : RP.fmt(v);
+      b.disabled = busy || cost < cfg.minBet || cost > chips;
+      b.setAttribute('aria-pressed', betMode === v ? 'true' : 'false');
+      b.addEventListener('click', function () { betMode = v; renderControls(); });
+      betsBox.appendChild(b);
+    });
+    var bet = currentBet();
+    spinBtn.disabled = busy || bet < cfg.minBet || bet > chips;
+    spinBtn.textContent = busy ? 'SPINNING…' : 'SPIN · ' + RP.fmt(bet);
+    $('#broke').hidden = busy || chips >= cfg.minBet;
+  }
+
+  // ---------- 결과 표시 ----------
+  function setResult(cls, label, amt) {
+    var r = $('#result');
+    r.className = 'result ' + cls;
+    r.innerHTML = '<span class="lbl"></span>' + (amt ? '<span class="amt"></span>' : '');
+    r.querySelector('.lbl').textContent = label;
+    if (amt) r.querySelector('.amt').textContent = amt;
+  }
+  function renderRecent() {
+    var box = $('#dots');
+    box.innerHTML = '';
+    if (!recent.length) { box.innerHTML = '<span class="dot">–</span>'; return; }
+    recent.slice(0, 10).forEach(function (h) {
+      var s = document.createElement('span');
+      s.className = 'dot' + (h.mult === 777 ? ' jp' : h.delta > 0 ? ' up' : '');
+      s.textContent = h.mult === 777 ? '777' : '×' + h.mult;
+      box.appendChild(s);
+    });
+  }
+  function confetti() {
+    if (RP.reduceMotion) return;
+    var suits = ['♠', '♥', '♦', '♣', '★'];
+    for (var i = 0; i < 44; i++) {
+      var c = document.createElement('span');
+      c.className = 'conf';
+      c.textContent = suits[i % suits.length];
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.fontSize = (16 + Math.random() * 22) + 'px';
+      c.style.color = i % 3 === 0 ? '#9b1b30' : '#f6e3a1';
+      c.style.animationDuration = (2.6 + Math.random() * 2.4) + 's';
+      c.style.animationDelay = (Math.random() * 1.2) + 's';
+      document.body.appendChild(c);
+      setTimeout(function (n) { n.remove(); }, 7000, c);
+    }
+  }
+  function reveal(d) {
+    chips = d.chips;
+    RP.setChips(chips);
+    var sign = d.delta > 0 ? '+' : d.delta < 0 ? '−' : '±', amt = sign + RP.fmt(Math.abs(d.delta)) + ' CHIPS';
+    if (d.jackpot) { setResult('win', '777 JACKPOT!', amt); }
+    else if (d.delta > 0) { setResult('win', 'WIN  ×' + d.mult, amt); }
+    else if (d.delta === 0) { setResult('push', 'PUSH  ×1', amt); }
+    else { setResult('lose', d.mult === 0 ? '꽝  ×0' : 'LOSE  ×' + d.mult, amt); }
+    recent.unshift({ mult: d.mult, delta: d.delta });
+    renderRecent();
+    busy = false;
+    normalizeBet();
+    renderControls();
+    if (d.jackpot) {
+      $('#jp-amt').textContent = '+' + RP.fmt(d.delta) + ' CHIPS';
+      $('#jackpot').hidden = false;
+      confetti();
+      $('#jp-close').focus();
+    }
+  }
+
+  // ---------- 스핀 ----------
+  function spinTo(mult, done) {
+    var idx = [];
+    SLICES.forEach(function (m, i) { if (m === mult) idx.push(i); });
+    var i = idx[Math.floor(Math.random() * idx.length)], A = 360 / SLICES.length;
+    var center = i * A + A / 2 + (Math.random() - 0.5) * A * 0.6;
+    var targetMod = ((360 - center) % 360 + 360) % 360;
+    var curMod = ((rot % 360) + 360) % 360;
+    rot += 360 * 6 + ((targetMod - curMod + 360) % 360);
+    var dur = RP.reduceMotion ? 0.01 : 5.2;
+    wheel.style.transition = 'transform ' + dur + 's cubic-bezier(.08,.72,.12,1)';
+    wheel.style.transform = 'rotate(' + rot + 'deg)';
+    svg.classList.add('spinning');
+    setTimeout(function () { svg.classList.remove('spinning'); done(); }, dur * 1000 + 250);
+  }
+
+  spinBtn.addEventListener('click', function () {
+    if (busy) return;
+    var bet = currentBet();
+    if (bet < cfg.minBet || bet > chips) return;
+    busy = true; renderControls();
+    setResult('idle', '휠이 돌아갑니다…');
+    RP.api('/api/roulette/spin', { bet: bet }).then(function (r) {
+      if (!r.ok) {
+        busy = false; renderControls();
+        setResult('err', r.d.error || '요청을 처리하지 못했습니다.');
+        return;
+      }
+      spinTo(r.d.mult, function () { reveal(r.d); });
+    }).catch(function () {
+      busy = false; renderControls();
+      setResult('err', '서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.');
+    });
+  });
+
+  $('#refill').addEventListener('click', function () {
+    RP.api('/api/refill', {}).then(function (r) {
+      if (!r.ok) { setResult('err', r.d.error || '충전하지 못했습니다.'); return; }
+      chips = r.d.chips; RP.setChips(chips);
+      betMode = 100; normalizeBet(); renderControls();
+      setResult('idle', '1,000 칩이 충전되었습니다');
+    });
+  });
+
+  $('#jp-close').addEventListener('click', function () { $('#jackpot').hidden = true; spinBtn.focus(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#jackpot').hidden) $('#jp-close').click(); });
+
+  // ---------- 시작 ----------
+  function buildPay(c) {
+    var body = $('#pay'), rtp = 0;
+    c.outcomes.slice().sort(function (a, b) { return b.mult - a.mult; }).forEach(function (o) {
+      var tr = document.createElement('tr');
+      if (o.mult === 777) tr.className = 'jp';
+      tr.innerHTML = '<td></td><td></td><td></td>';
+      var td = tr.children;
+      td[0].textContent = o.mult === 777 ? '777 JACKPOT' : '×' + o.mult;
+      td[1].textContent = (o.weight / c.total * 100).toFixed(o.weight / c.total < 0.001 ? 2 : 1) + '%';
+      td[2].textContent = o.mult === 0 ? '없음' : '베팅액 ×' + o.mult;
+      body.appendChild(tr);
+      rtp += o.mult * o.weight / c.total;
+    });
+    $('#rtp').textContent = '결과는 서버에서 무작위로 정해지며, 휠의 칸 개수와 확률은 다를 수 있습니다. 기대 환수율 ' +
+      (rtp * 100).toFixed(2) + '% · 베팅 ' + RP.fmt(c.minBet) + ' ~ ' + RP.fmt(c.maxBet) + ' 칩';
+  }
+
+  renderRecent();
+  Promise.all([
+    new Promise(function (res) { RP.ready(res); }),
+    RP.api('/api/roulette/config')
+  ]).then(function (v) {
+    var p = v[0], c = v[1];
+    if (!c.ok) { setResult('err', '게임 설정을 불러오지 못했습니다.'); return; }
+    cfg = c.d; chips = p.chips;
+    recent = (p.history || []).filter(function (h) { return h.game === 'roulette'; }).map(function (h) { return { mult: h.mult, delta: h.delta }; });
+    buildPay(cfg);
+    normalizeBet();
+    renderRecent();
+    renderControls();
+  });
+})();
+</script>
+</body>
+</html>
