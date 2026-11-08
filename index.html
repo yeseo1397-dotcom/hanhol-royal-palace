@@ -227,13 +227,6 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
       <div class="suits" aria-hidden="true"><span>♠</span><span class="r">♥</span><span class="r">♦</span><span>♣</span></div>
     </form>
 
-    <!-- 로그인 완료 (메인 화면은 이번 범위에 포함하지 않음) -->
-    <div id="done" class="welcome" hidden>
-      <h2 class="title" style="margin-bottom:8px"><span>WELCOME</span></h2>
-      <h2 id="who"></h2>
-      <p>로그인되었습니다.</p>
-      <button class="btn ghost" id="out" type="button">LOGOUT</button>
-    </div>
   </section>
 </main>
 
@@ -297,9 +290,7 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
     return ok;
   }
 
-  function showDone(name){
-    form.hidden = true; $('#done').hidden = false; $('#who').textContent = name;
-  }
+  function showDone(){ location.replace('/lobby'); }
 
   function api(path, body){
     return fetch(path, {
@@ -329,16 +320,8 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
       .then(function(){ busy = false; go.disabled = swap.disabled = false; });
   });
 
-  $('#out').addEventListener('click', function(){
-    api('/api/logout').then(function(){
-      $('#done').hidden = true; form.hidden = false; setMode('login');
-      showAlert('로그아웃되었습니다.', true);
-    });
-  });
+  if (/[?&]out=1/.test(location.search)) showAlert('로그아웃되었습니다.', true);
 
-  // 기존 세션 복원
-  fetch('/api/me', {credentials:'same-origin'}).then(function(r){ return r.json(); })
-    .then(function(d){ if (d.user) showDone(d.user); }).catch(function(){});
 })();
 </script>
 </body>
