@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ROYAL PALACE · Lobby</title>
+<meta name="theme-color" content="#0a0707">
+<link rel="stylesheet" href="/theme.css">
+<style>
+.hello{text-align:center;margin:clamp(6px,2vw,18px) 0 clamp(18px,4vw,30px)}
+.hello h1{font-family:var(--serif);font-weight:700;letter-spacing:.14em;font-size:clamp(22px,5.6vw,42px);line-height:1.2;word-break:break-all;
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.7)) drop-shadow(0 0 18px rgba(212,175,55,.25))}
+.hello p{margin-top:10px;color:#b9a98b;font-size:14px}
+
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,2.4vw,20px);margin-bottom:clamp(14px,3vw,22px)}
+.cat{position:relative;text-align:center;padding:clamp(16px,3vw,28px) 10px;cursor:pointer;font:inherit;color:inherit;
+  border:1px solid rgba(212,175,55,.5);background:linear-gradient(180deg,rgba(28,17,15,.9),rgba(8,5,5,.92));
+  transition:border-color .2s,box-shadow .25s,background .25s,transform .15s}
+.cat:hover{transform:translateY(-2px);border-color:var(--gold-hi)}
+.cat:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+.cat .ico{display:block;font-size:clamp(26px,6vw,40px);letter-spacing:.2em;padding-left:.2em}
+.cat.luck .ico{color:var(--burg-hi)} .cat.skill .ico{color:var(--gold)}
+.cat b{display:block;font-family:var(--serif);font-size:clamp(18px,4.6vw,28px);letter-spacing:.3em;padding-left:.3em;margin-top:4px}
+.cat em{display:block;font-style:normal;color:#e0d2b2;font-size:clamp(13px,3.2vw,16px);margin-top:4px}
+.cat small{display:block;color:#8d7f66;font-size:12px;margin-top:6px}
+.cat[aria-selected="true"]{border-color:var(--gold-hi);background:linear-gradient(180deg,rgba(70,22,30,.92),rgba(10,6,6,.95));
+  box-shadow:0 0 0 1px rgba(246,227,161,.35),0 0 36px rgba(212,175,55,.25)}
+@media (max-width:520px){.cat small{display:none}}
+
+.list{display:grid;gap:14px;margin-bottom:clamp(18px,4vw,30px)}
+.game{display:flex;align-items:center;gap:clamp(12px,3vw,22px);padding:clamp(14px,3vw,22px);text-decoration:none;color:inherit;
+  border:1px solid rgba(212,175,55,.5);background:linear-gradient(90deg,rgba(107,15,31,.4),rgba(10,6,6,.88));
+  transition:transform .15s,box-shadow .25s,border-color .2s}
+a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--gold-hi);outline:none;box-shadow:0 10px 34px rgba(0,0,0,.6),0 0 30px rgba(212,175,55,.2)}
+.wheel-ico{position:relative;flex:none;width:clamp(58px,15vw,86px);aspect-ratio:1;border-radius:50%;border:3px solid var(--gold);
+  background:conic-gradient(#6b0f1f 0 10%,#150e0e 0 20%,#8a6a1c 0 30%,#150e0e 0 40%,#6b0f1f 0 50%,#150e0e 0 60%,#d4af37 0 70%,#150e0e 0 80%,#6b0f1f 0 90%,#f6e3a1 0 100%);
+  box-shadow:0 0 18px rgba(212,175,55,.35)}
+.wheel-ico::after{content:"7";position:absolute;inset:32%;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:700;
+  color:#6b0f1f;background:radial-gradient(circle at 35% 30%,#f6e3a1,#b8922a);border:1px solid #fff3c4;font-size:clamp(12px,3vw,18px)}
+.lock-ico{flex:none;width:clamp(58px,15vw,86px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(24px,6vw,34px);
+  color:var(--gold);border:2px dashed rgba(212,175,55,.5);background:rgba(0,0,0,.4)}
+.game h3{font-family:var(--serif);letter-spacing:.16em;font-size:clamp(15px,4vw,22px)}
+.game p{color:#b9a98b;font-size:13.5px;margin-top:5px;line-height:1.55}
+.play{margin-left:auto;flex:none;font-family:var(--serif);font-weight:700;letter-spacing:.3em;padding:10px 6px 10px 16px;font-size:13px;
+  color:#1a1204;background:var(--gold-grad);border:1px solid #f6e3a1}
+.game.soon{opacity:.65;filter:grayscale(.35);background:linear-gradient(90deg,rgba(30,22,20,.6),rgba(10,6,6,.88))}
+.game.soon .play{background:none;color:var(--gold);border:1px dashed rgba(212,175,55,.5);letter-spacing:.14em;padding:10px 12px}
+@media (max-width:480px){.play{padding:9px 4px 9px 12px;font-size:12px}.game.soon .play{padding:8px 8px;font-size:10px}}
+
+.me h2{font-family:var(--serif);letter-spacing:.3em;font-size:14px;color:var(--gold-hi);text-align:center;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stat{text-align:center;padding:12px 4px;border:1px solid rgba(212,175,55,.3);background:rgba(0,0,0,.4)}
+.stat b{display:block;font-family:var(--serif);font-size:clamp(16px,4.4vw,24px);color:var(--gold-hi);word-break:break-all}
+.stat span{display:block;margin-top:4px;font-size:11px;letter-spacing:.14em;color:#9d8e72}
+.hist{list-style:none}
+.hist li{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid rgba(212,175,55,.16);font-size:13.5px}
+.hist li:first-child{border-top:0}
+.hist .g{flex:1;min-width:0}
+.hist .g small{display:block;color:#8d7f66;font-size:12px;margin-top:2px}
+.hist .m{font-family:var(--serif);font-weight:700;padding:3px 8px;border:1px solid rgba(212,175,55,.5);color:var(--gold-hi);font-size:12px}
+.hist .m.jp{background:var(--burg);color:#fff;border-color:var(--gold-hi)}
+.hist .d{min-width:74px;text-align:right;font-family:var(--serif);font-weight:700}
+.d.up{color:#f6e3a1}.d.down{color:#ff8a9a}.d.even{color:#b9a98b}
+.empty{text-align:center;color:#9d8e72;font-size:14px;padding:10px 0}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="hello">
+    <div class="h-orn">◆ VIP LOUNGE ◆</div>
+    <h1 class="gold-text" id="name">WELCOME</h1>
+    <p>플레이할 게임의 종류를 선택하세요</p>
+  </section>
+
+  <div class="cats" role="tablist" aria-label="게임 카테고리">
+    <button class="cat luck" id="tab-luck" role="tab" aria-selected="true" aria-controls="list-luck" type="button">
+      <span class="ico" aria-hidden="true">♥♦</span><b class="gold-text">LUCK</b><em>실력 무관</em><small>운에 모든 것을 맡기는 게임</small>
+    </button>
+    <button class="cat skill" id="tab-skill" role="tab" aria-selected="false" aria-controls="list-skill" type="button">
+      <span class="ico" aria-hidden="true">♠♣</span><b class="gold-text">SKILL</b><em>실력 관련</em><small>실력으로 승부하는 게임</small>
+    </button>
+  </div>
+
+  <section class="list" id="list-luck" role="tabpanel" aria-labelledby="tab-luck">
+    <a class="game" href="/roulette">
+      <span class="wheel-ico" aria-hidden="true"></span>
+      <div><h3 class="gold-text">777 ROULETTE</h3><p>휠을 돌려 배당을 노리세요. 777에 멈추면 잭팟 ×777!</p></div>
+      <span class="play">PLAY ›</span>
+    </a>
+  </section>
+
+  <section class="list" id="list-skill" role="tabpanel" aria-labelledby="tab-skill" hidden>
+    <div class="game soon">
+      <span class="lock-ico" aria-hidden="true">♠</span>
+      <div><h3 class="gold-text">NEW GAMES</h3><p>실력 게임이 곧 추가됩니다.</p></div>
+      <span class="play">COMING SOON</span>
+    </div>
+  </section>
+
+  <section class="panel me" aria-label="내 기록">
+    <h2>MY RECORD</h2>
+    <div class="stats">
+      <div class="stat"><b id="s-spins">0</b><span>TOTAL SPINS</span></div>
+      <div class="stat"><b id="s-big">0</b><span>BEST WIN</span></div>
+      <div class="stat"><b id="s-jp">0</b><span>777 JACKPOT</span></div>
+    </div>
+    <ul class="hist" id="hist"></ul>
+  </section>
+</main>
+
+<script src="/app.js"></script>
+<script>
+(function () {
+  var $ = function (s) { return document.querySelector(s); };
+
+  function pick(cat) {
+    ['luck', 'skill'].forEach(function (c) {
+      $('#tab-' + c).setAttribute('aria-selected', c === cat ? 'true' : 'false');
+      $('#list-' + c).hidden = c !== cat;
+    });
+  }
+  function fromHash() { pick(location.hash === '#skill' ? 'skill' : 'luck'); }
+  ['luck', 'skill'].forEach(function (c) {
+    $('#tab-' + c).addEventListener('click', function () { history.replaceState(null, '', '#' + c); pick(c); });
+  });
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+
+  function row(h) {
+    var li = document.createElement('li');
+    var jp = h.mult === 777, cls = h.delta > 0 ? 'up' : h.delta < 0 ? 'down' : 'even';
+    var sign = h.delta > 0 ? '+' : h.delta < 0 ? '−' : '±';
+    li.innerHTML =
+      '<div class="g"><span>777 ROULETTE</span><small></small></div>' +
+      '<span class="m' + (jp ? ' jp' : '') + '"></span><span class="d ' + cls + '"></span>';
+    li.querySelector('small').textContent = RP.ago(h.t) + ' · BET ' + RP.fmt(h.bet);
+    li.querySelector('.m').textContent = jp ? '777' : '×' + h.mult;
+    li.querySelector('.d').textContent = sign + RP.fmt(Math.abs(h.delta));
+    return li;
+  }
+
+  RP.ready(function (p) {
+    $('#name').textContent = 'WELCOME, ' + p.user;
+    $('#s-spins').textContent = RP.fmt(p.stats.spins);
+    $('#s-big').textContent = RP.fmt(p.stats.biggestWin);
+    $('#s-jp').textContent = RP.fmt(p.stats.jackpots);
+    var ul = $('#hist');
+    if (!p.history.length) {
+      ul.innerHTML = '<li class="empty">아직 플레이 기록이 없습니다. 첫 게임을 시작해 보세요!</li>';
+    } else {
+      p.history.slice(0, 6).forEach(function (h) { ul.appendChild(row(h)); });
+    }
+  });
+})();
+</script>
+</body>
+</html>
