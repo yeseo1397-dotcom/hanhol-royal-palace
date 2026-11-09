@@ -14,13 +14,22 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const ID_RE = /^[\p{L}\p{N}_]+$/u; // 글자·숫자·_ (길이 제한 없음, 공백 불가)
 
 // ---------- 게임 설정 ----------
-const START_CHIPS = 1000, REFILL_CHIPS = 1000; // 가입 시 1,000 코인
+const APP_VERSION = '3'; // 화면 파일(app.js)과 같아야 합니다. 다르면 화면 위에 안내가 뜹니다.
+const START_CHIPS = 1000; // 가입 시 1,000 코인
 const MIN_BET = 10, MAX_BET = 100000, HISTORY_MAX = 30;
 // 특정 계정에 딱 한 번 지급하는 보너스 코인. names = 아이디(대소문자 무시, 공백은 쓸 수 없음).
 // 새 보너스를 줄 때는 id를 새로 지어 한 줄 추가하세요. (같은 id는 계정당 1번만 지급됩니다)
 const GRANTS = [
   { id: 'bonus-1000-a', names: ['도박좋아'], amount: 1000 }
 ];
+// 개발자 계정: 코인이 무한대이고, 다른 플레이어의 은행(대출) 역할을 합니다. (아이디, 대소문자 무시)
+const DEV_NAMES = ['19'];
+// 은행: 코인이 MIN_BET 미만일 때만 빌릴 수 있고, 이자는 없습니다.
+const BANK_OPTIONS = [500, 1000, 5000], MAX_DEBT = 20000;
+// 교환: 코인이 EXCHANGE_COST 이상이고 빚이 없을 때 교환권 1장으로 바꿀 수 있습니다.
+const EXCHANGE_COST = 1000000;
+const LEDGER_KEY = ' ledger'; // 공백이 있어서 아이디와 겹치지 않음 (개발자가 보는 대출 장부)
+const isDev = u => DEV_NAMES.includes(String(u.name || '').toLowerCase());
 const GAME_VERSION = 2; // 게임 규칙이 바뀌면 올려서 모두 새로 시작
 // 777 룰렛(슬롯)
 //  - 777 (릴 3개 모두 7): 확률 1/777, 지급 = 베팅액 x 50
@@ -108,6 +117,8 @@ function ensureGame(u) {
     u.history = [];
   }
   if (u.stats.pairs === undefined) u.stats.pairs = 0;
+  if (typeof u.debt !== 'number') u.debt = 0;
+  if (typeof u.tickets !== 'number') u.tickets = 0;
   if (!Array.isArray(u.grants)) u.grants = [];
   const nm = String(u.name || '').toLowerCase();
   for (const g of GRANTS) {
@@ -175,6 +186,19 @@ function startSession(req, name, key) {
   return `rp_sid=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_MS / 1000}${secure}`;
 }
 const fmt = n => Number(n).toLocaleString('en-US');
+// 화면에 보내는 계정 요약 (개발자는 chips: null = 무한대)
+const view = u => ({ user: u.name, dev: isDev(u), chips: isDev(u) ? null : u.chips, debt: u.debt, tickets: u.tickets,
+  exchangeCost: EXCHANGE_COST, version: APP_VERSION });
+// 개발자가 보는 대출 장부 (빚이 있는 사람만 기록)
+function updateLedger(key, name, debt) {
+  return withLock(LEDGER_KEY, async () => {
+    const raw = (await store.get(LEDGER_KEY)) || {};
+    const list = (Array.isArray(raw.debtors) ? raw.debtors : []).filter(d => d.key !== key);
+    if (debt > 0) list.push({ key, name, debt });
+    await store.put(LEDGER_KEY, { debtors: list });
+  });
+}
+const notFound = { code: 401, body: { error: '계정을 찾을 수 없습니다. 다시 로그인해 주세요.' } };
 
 // ---------- 정적 파일 (허용 목록만 제공: server.js, data/ 등은 노출되지 않음) ----------
 const PAGES = {
@@ -228,7 +252,7 @@ async function handle(req, res) {
   }
 
   // 로그인이 필요한 API
-  if (url === '/api/me' || url === '/api/profile' || url.startsWith('/api/roulette') || url === '/api/refill') {
+  if (url === '/api/me' || url === '/api/profile' || url.startsWith('/api/roulette') || url.startsWith('/api/bank') || url === '/api/exchange') {
     const s = getSession(req);
     if (!s) return send(res, 401, { error: '로그인이 필요합니다.' });
 
@@ -236,7 +260,7 @@ async function handle(req, res) {
       const u = await store.get(s.key);
       if (!u) { sessions.delete(cookie(req, 'rp_sid')); return send(res, 401, { error: '계정을 찾을 수 없습니다. 다시 로그인해 주세요.' }); }
       ensureGame(u);
-      return send(res, 200, { user: u.name, chips: u.chips, stats: u.stats, history: u.history.slice(0, 10) });
+      return send(res, 200, { ...view(u), stats: u.stats, history: u.history.slice(0, 10) });
     }
 
     if (req.method === 'GET' && url === '/api/roulette/config')
@@ -252,10 +276,11 @@ async function handle(req, res) {
         const u = await store.get(s.key);
         if (!u) return { code: 401, body: { error: '계정을 찾을 수 없습니다. 다시 로그인해 주세요.' } };
         ensureGame(u);
-        if (bet > u.chips) return { code: 400, body: { error: '코인이 부족합니다.' } };
+        const dev = isDev(u);
+        if (!dev && bet > u.chips) return { code: 400, body: { error: '코인이 부족합니다.' } };
         const r = drawSpin();
         const payout = bet * r.mult, delta = payout - bet;
-        u.chips += delta;
+        if (!dev) u.chips += delta;
         u.stats.spins++; u.stats.wagered += bet; u.stats.won += payout;
         if (delta > u.stats.biggestWin) u.stats.biggestWin = delta;
         if (r.kind === 'jackpot') u.stats.jackpots++;
@@ -263,20 +288,78 @@ async function handle(req, res) {
         u.history.unshift({ t: new Date().toISOString(), game: 'roulette', bet, mult: r.mult, delta });
         u.history.length = Math.min(u.history.length, HISTORY_MAX);
         await store.put(s.key, u);
-        return { code: 200, body: { reels: r.reels, kind: r.kind, mult: r.mult, bet, payout, delta, chips: u.chips, jackpot: r.kind === 'jackpot' } };
+        return { code: 200, body: { reels: r.reels, kind: r.kind, mult: r.mult, bet, payout, delta, chips: dev ? null : u.chips, jackpot: r.kind === 'jackpot' } };
       });
       return send(res, out.code, out.body);
     }
 
-    if (req.method === 'POST' && url === '/api/refill') {
+    // ----- 은행 -----
+    if (req.method === 'GET' && url === '/api/bank') {
+      const u = await store.get(s.key);
+      if (!u) return send(res, 401, notFound.body);
+      ensureGame(u);
+      if (isDev(u)) {
+        const raw = (await store.get(LEDGER_KEY)) || {};
+        const debtors = (Array.isArray(raw.debtors) ? raw.debtors : []).map(d => ({ name: d.name, debt: d.debt })).sort((a, b) => b.debt - a.debt);
+        return send(res, 200, { dev: true, debtors, total: debtors.reduce((a, d) => a + d.debt, 0) });
+      }
+      return send(res, 200, { dev: false, chips: u.chips, debt: u.debt, options: BANK_OPTIONS, maxDebt: MAX_DEBT, minBet: MIN_BET });
+    }
+
+    if (req.method === 'POST' && url === '/api/bank/borrow') {
+      let body;
+      try { body = await readJson(req); } catch { return send(res, 400, { error: '잘못된 요청입니다.' }); }
+      const amt = body.amount;
+      if (!BANK_OPTIONS.includes(amt)) return send(res, 400, { error: '대출 금액이 올바르지 않습니다.' });
       const out = await withLock(s.key, async () => {
         const u = await store.get(s.key);
-        if (!u) return { code: 401, body: { error: '계정을 찾을 수 없습니다. 다시 로그인해 주세요.' } };
+        if (!u) return notFound;
         ensureGame(u);
-        if (u.chips >= MIN_BET) return { code: 400, body: { error: '아직 코인이 남아 있습니다.' } };
-        u.chips = REFILL_CHIPS;
+        if (isDev(u)) return { code: 400, body: { error: '개발자 계정은 코인이 무한대라 빌릴 필요가 없습니다.' } };
+        if (u.chips >= MIN_BET) return { code: 400, body: { error: `코인이 ${fmt(MIN_BET)} 미만일 때만 빌릴 수 있습니다.` } };
+        if (u.debt + amt > MAX_DEBT) return { code: 400, body: { error: `빚은 최대 ${fmt(MAX_DEBT)} 코인까지입니다. 먼저 갚아 주세요.` } };
+        u.chips += amt; u.debt += amt;
         await store.put(s.key, u);
-        return { code: 200, body: { chips: u.chips } };
+        try { await updateLedger(s.key, u.name, u.debt); } catch (e) { console.error('ledger', e); }
+        return { code: 200, body: { chips: u.chips, debt: u.debt } };
+      });
+      return send(res, out.code, out.body);
+    }
+
+    if (req.method === 'POST' && url === '/api/bank/repay') {
+      let body;
+      try { body = await readJson(req); } catch { return send(res, 400, { error: '잘못된 요청입니다.' }); }
+      if (!Number.isInteger(body.amount) || body.amount < 1) return send(res, 400, { error: '갚을 금액을 1 이상의 정수로 입력해 주세요.' });
+      const out = await withLock(s.key, async () => {
+        const u = await store.get(s.key);
+        if (!u) return notFound;
+        ensureGame(u);
+        if (u.debt <= 0) return { code: 400, body: { error: '갚을 빚이 없습니다.' } };
+        const amt = Math.min(body.amount, u.debt);
+        if (isDev(u) || amt > u.chips) return { code: 400, body: { error: '코인이 부족합니다.' } };
+        u.chips -= amt; u.debt -= amt;
+        await store.put(s.key, u);
+        try { await updateLedger(s.key, u.name, u.debt); } catch (e) { console.error('ledger', e); }
+        return { code: 200, body: { chips: u.chips, debt: u.debt, repaid: amt } };
+      });
+      return send(res, out.code, out.body);
+    }
+
+    // ----- 교환 (코인 100만 → 교환권 1장) -----
+    if (req.method === 'POST' && url === '/api/exchange') {
+      const out = await withLock(s.key, async () => {
+        const u = await store.get(s.key);
+        if (!u) return notFound;
+        ensureGame(u);
+        const dev = isDev(u);
+        if (!dev) {
+          if (u.debt > 0) return { code: 400, body: { error: '빚을 모두 갚아야 교환할 수 있습니다.' } };
+          if (u.chips < EXCHANGE_COST) return { code: 400, body: { error: `교환은 ${fmt(EXCHANGE_COST)} 코인부터 가능합니다.` } };
+          u.chips -= EXCHANGE_COST;
+        }
+        u.tickets++;
+        await store.put(s.key, u);
+        return { code: 200, body: { chips: dev ? null : u.chips, tickets: u.tickets } };
       });
       return send(res, out.code, out.body);
     }
