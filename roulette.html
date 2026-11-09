@@ -159,8 +159,8 @@
     <div class="bets" id="bets"></div>
     <button class="btn gold" id="spin" type="button" disabled>SPIN</button>
     <div class="broke" id="broke" hidden>
-      코인이 부족합니다.
-      <button class="btn ghost" id="refill" type="button">REFILL 1,000</button>
+      코인이 부족합니다. BANK에서 빌릴 수 있어요.
+      <button class="btn ghost" id="open-bank" type="button">BANK 열기</button>
     </div>
   </section>
 
@@ -293,7 +293,7 @@
   }
   function highlight(list) { list.forEach(function (k) { reels[k].classList.add('hl'); }); }
   function reveal(d) {
-    chips = d.chips;
+    chips = RP.coins(d.chips);
     RP.setChips(chips);
     $('#led-win').textContent = RP.fmt(d.payout);
     if (d.kind === 'jackpot') {
@@ -367,16 +367,15 @@
   spinBtn.addEventListener('click', startSpin);
   lever.addEventListener('click', startSpin);
 
-  $('#refill').addEventListener('click', function () {
-    RP.api('/api/refill', {}).then(function (r) {
-      if (!r.ok) { setResult('err', r.d.error || '충전하지 못했습니다.'); return; }
-      chips = r.d.chips; RP.setChips(chips);
-      betMode = 10; normalizeBet(); renderControls();
-      setResult('idle', RP.fmt(chips) + ' 코인이 충전되었습니다');
-    });
-  });
+  $('#open-bank').addEventListener('click', function () { RP.openBank(); });
   $('#jp-close').addEventListener('click', function () { $('#jackpot').hidden = true; spinBtn.focus(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#jackpot').hidden) $('#jp-close').click(); });
+
+  // 은행에서 빌리거나 갚았을 때 베팅 UI 갱신
+  RP.onChips = function (n) {
+    if (!cfg || busy) return;
+    chips = n; normalizeBet(); renderControls();
+  };
 
   // ---------- 시작 ----------
   renderRecent();
@@ -386,7 +385,7 @@
   ]).then(function (v) {
     var p = v[0], c = v[1];
     if (!c.ok) { setResult('err', '게임 설정을 불러오지 못했습니다.'); return; }
-    cfg = c.d; chips = p.chips;
+    cfg = c.d; chips = RP.coins(p.chips);
     recent = (p.history || []).filter(function (h) { return h.game === 'roulette'; }).map(function (h) {
       return { kind: h.mult >= cfg.payoutMult ? 'jackpot' : h.mult > 0 ? 'pair' : 'miss' };
     });
