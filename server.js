@@ -16,6 +16,11 @@ const ID_RE = /^[\p{L}\p{N}_]+$/u; // 글자·숫자·_ (길이 제한 없음, �
 // ---------- 게임 설정 ----------
 const START_CHIPS = 1000, REFILL_CHIPS = 1000; // 가입 시 1,000 코인
 const MIN_BET = 10, MAX_BET = 100000, HISTORY_MAX = 30;
+// 특정 계정에 딱 한 번 지급하는 보너스 코인. names = 아이디(대소문자 무시, 공백은 쓸 수 없음).
+// 새 보너스를 줄 때는 id를 새로 지어 한 줄 추가하세요. (같은 id는 계정당 1번만 지급됩니다)
+const GRANTS = [
+  { id: 'bonus-1000-a', names: ['도박좋아'], amount: 1000 }
+];
 const GAME_VERSION = 2; // 게임 규칙이 바뀌면 올려서 모두 새로 시작
 // 777 룰렛(슬롯)
 //  - 777 (릴 3개 모두 7): 확률 1/777, 지급 = 베팅액 x 50
@@ -103,6 +108,11 @@ function ensureGame(u) {
     u.history = [];
   }
   if (u.stats.pairs === undefined) u.stats.pairs = 0;
+  if (!Array.isArray(u.grants)) u.grants = [];
+  const nm = String(u.name || '').toLowerCase();
+  for (const g of GRANTS) {
+    if (g.names.includes(nm) && !u.grants.includes(g.id)) { u.grants.push(g.id); u.chips += g.amount; }
+  }
   return u;
 }
 
