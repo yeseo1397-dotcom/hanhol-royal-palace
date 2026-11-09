@@ -62,6 +62,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 .d.up{color:#f6e3a1}.d.down{color:#ff8a9a}.d.even{color:#b9a98b}
 .hist .m.pr{border-color:var(--gold);background:rgba(212,175,55,.15)}
 @media (max-width:480px){.stat span{letter-spacing:.04em;font-size:10px}.stats{gap:6px}}
+.foot{margin-top:22px;text-align:center;font-size:12px;color:#7d705b;letter-spacing:.08em}
 .empty{text-align:center;color:#9d8e72;font-size:14px;padding:10px 0}
 </style>
 </head>
@@ -108,6 +109,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
     </div>
     <ul class="hist" id="hist"></ul>
   </section>
+  <p class="foot" id="ver"></p>
 </main>
 
 <script src="/app.js"></script>
@@ -143,6 +145,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 
   RP.ready(function (p) {
     $('#name').textContent = 'WELCOME, ' + p.user;
+    $('#ver').textContent = 'ROYAL PALACE · v' + p.version;
     $('#s-spins').textContent = RP.fmt(p.stats.spins);
     $('#s-big').textContent = RP.fmt(p.stats.biggestWin);
     $('#s-jp').textContent = RP.fmt(p.stats.jackpots);
