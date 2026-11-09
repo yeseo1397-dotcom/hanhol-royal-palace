@@ -107,3 +107,52 @@ body{background:var(--ink);color:#e9dcc0;font-family:var(--sans);overflow-x:hidd
 
 html,body{height:auto;min-height:100%}
 @media (max-width:520px){.who{display:none}.bar-logo{font-size:12px;letter-spacing:.12em;gap:6px}.chips{padding:5px 9px}}
+
+/* ===== 상단바: BANK / 코인창 / 개발자 배지 ===== */
+.who{display:flex;align-items:center;gap:6px}
+.dev-badge{font-style:normal;font-family:var(--serif);font-weight:700;font-size:10px;letter-spacing:.14em;padding:2px 6px;border-radius:2px;color:#1a1204;background:var(--gold-grad)}
+.bank-btn{position:relative;height:34px;padding:0 14px;font-family:var(--serif);font-weight:700;font-size:11px;letter-spacing:.2em;cursor:pointer;
+  color:#1a1204;background:var(--gold-grad);border:1px solid #f6e3a1;border-radius:2px;box-shadow:0 2px 12px rgba(212,175,55,.25);transition:filter .2s,box-shadow .2s}
+.bank-btn:hover,.bank-btn:focus-visible{filter:brightness(1.1);box-shadow:0 4px 18px rgba(246,227,161,.45);outline:none}
+.alert-dot{position:absolute;top:-5px;right:-5px;width:11px;height:11px;border-radius:50%;background:#ff3b52;border:2px solid #0a0707;animation:dotp 1.3s ease-in-out infinite alternate}
+@keyframes dotp{to{transform:scale(1.35);box-shadow:0 0 10px #ff3b52}}
+button.chips{cursor:pointer;font-size:14px;transition:border-color .2s,box-shadow .2s}
+.chips:hover,.chips:focus-visible{border-color:var(--gold-hi);box-shadow:0 0 14px rgba(212,175,55,.35);outline:none}
+.chip-ico.big{width:30px;height:30px}
+.ver-warn{position:relative;z-index:6;padding:10px 16px;text-align:center;font-size:13.5px;line-height:1.55;color:#ffd7dd;background:linear-gradient(90deg,#6b0f1f,#3b0710);border-bottom:1px solid #d1445a}
+.mini.gold{color:#1a1204;background:var(--gold-grad);border-color:#f6e3a1}
+.mini:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== 팝업 (지갑 / 은행) ===== */
+.modal-back{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(0,0,0,.78);animation:mfade .2s}
+@keyframes mfade{from{opacity:0}}
+.modal{width:min(440px,100%);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflow:auto;padding:28px 22px 22px}
+.modal h2{font-family:var(--serif);letter-spacing:.3em;padding-left:.3em;font-size:15px;color:var(--gold-hi);text-align:center;margin-bottom:18px}
+.modal h3{font-family:var(--serif);letter-spacing:.24em;font-size:12px;color:var(--gold);margin:20px 0 10px}
+.m-x{position:absolute;top:6px;right:6px;z-index:2;width:40px;height:40px;font-size:26px;line-height:1;cursor:pointer;color:var(--gold-hi);background:none;border:0}
+.m-x:hover,.m-x:focus-visible{color:#fff;outline:none}
+.m-dl{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;margin:14px 0;font-size:14px}
+.m-dl dt{color:#9d8e72;font-size:12px;letter-spacing:.12em;align-self:center}
+.m-dl dd{text-align:right;font-family:var(--serif);font-weight:700;color:var(--gold-hi)}
+.m-dl dd.debt{color:#ff8a9a}
+.m-note{margin-top:12px;text-align:center;font-size:13px;line-height:1.6;color:#b9a98b}
+.m-lead{text-align:center;font-size:14px;line-height:1.6;color:#e0d2b2}
+.m-msg{min-height:22px;margin-top:12px;text-align:center;font-size:13.5px;color:var(--gold-hi)}
+.m-msg.err{color:#ff9aa8}
+.w-big{display:flex;align-items:center;justify-content:center;gap:12px;font-family:var(--serif);font-weight:700;font-size:clamp(28px,8vw,40px);color:var(--gold-hi);filter:drop-shadow(0 0 14px rgba(212,175,55,.3))}
+.w-dev{margin-top:6px;text-align:center;font-family:var(--serif);font-size:11px;letter-spacing:.3em;color:var(--gold)}
+.pg{height:8px;margin:16px 0 2px;border:1px solid rgba(212,175,55,.45);background:#120a0a;border-radius:4px;overflow:hidden}
+.pg i{display:block;height:100%;background:var(--gold-grad)}
+.m-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.m-opt{height:46px;font-family:var(--serif);font-weight:700;font-size:14px;cursor:pointer;color:var(--gold-hi);background:rgba(0,0,0,.55);border:1px solid rgba(212,175,55,.5);border-radius:2px;transition:background .2s,border-color .2s}
+.m-opt:hover:not(:disabled),.m-opt:focus-visible{background:linear-gradient(180deg,var(--burg-hi),var(--burg));border-color:var(--gold-hi);color:#fff;outline:none}
+.m-opt:disabled{opacity:.35;cursor:not-allowed}
+.m-repay{display:flex;gap:8px}
+.m-repay input{flex:1;min-width:0;height:42px;padding:0 12px;font:inherit;font-size:16px;color:#f4ead0;background:rgba(0,0,0,.55);border:1px solid rgba(212,175,55,.4);border-radius:2px;outline:none}
+.m-repay input:focus{border-color:var(--gold-hi);box-shadow:0 0 0 3px rgba(212,175,55,.18)}
+.m-repay .mini{height:42px}
+.debtors{list-style:none;margin-top:10px}
+.debtors li{display:flex;justify-content:space-between;gap:12px;padding:9px 2px;border-top:1px solid rgba(212,175,55,.16);font-size:14px}
+.debtors li:first-child{border-top:0}
+.debtors b{font-family:var(--serif);color:#ff8a9a;white-space:nowrap}
+@media (max-width:520px){.who{display:none}.bar-logo .lt{display:none}.bank-btn{padding:0 10px;letter-spacing:.14em}.modal{padding:26px 16px 18px}}
