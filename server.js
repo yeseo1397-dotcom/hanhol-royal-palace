@@ -17,14 +17,26 @@ const ID_RE = /^[\p{L}\p{N}_]+$/u; // 글자·숫자·_ (길이 제한 없음, �
 const START_CHIPS = 1000, REFILL_CHIPS = 1000; // 가입 시 1,000 코인
 const MIN_BET = 10, MAX_BET = 100000, HISTORY_MAX = 30;
 const GAME_VERSION = 2; // 게임 규칙이 바뀌면 올려서 모두 새로 시작
-// 777 룰렛(슬롯): 릴 3개가 모두 7이면 당첨. 확률 1/999, 지급 = 베팅액 x 50
-const WIN_ODDS = 999, PAYOUT_MULT = 50, SYMBOL_COUNT = 6; // 심볼 0 = '7'
+// 777 룰렛(슬롯)
+//  - 777 (릴 3개 모두 7): 확률 1/777, 지급 = 베팅액 x 50
+//  - 같은 모양 2개:        777을 제외한 나머지 중 PAIR_PERMILLE/1000 의 확률, 지급 = 베팅액 x 3
+//  - 그 외(세 릴이 모두 다른 모양): 꽝
+const WIN_ODDS = 777, PAYOUT_MULT = 50, SYMBOL_COUNT = 6; // 심볼 0 = '7'
+const PAIR_MULT = 3, PAIR_PERMILLE = 280;                 // 28%
+const PAIR_CHANCE = (1 - 1 / WIN_ODDS) * PAIR_PERMILLE / 1000; // 전체 기준 같은 모양 2개 확률
+function shuffle(a) { // 암호학적 난수로 섞기
+  for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
 function drawSpin() {
-  if (crypto.randomInt(WIN_ODDS) === 0) return { win: true, reels: [0, 0, 0] };
-  let reels;
-  do { reels = [0, 0, 0].map(() => crypto.randomInt(SYMBOL_COUNT)); }
-  while (reels[0] === reels[1] && reels[1] === reels[2]); // 꽝일 때 세 개가 모두 같은 모양이 되지 않게
-  return { win: false, reels };
+  if (crypto.randomInt(WIN_ODDS) === 0) return { kind: 'jackpot', mult: PAYOUT_MULT, reels: [0, 0, 0] };
+  if (crypto.randomInt(1000) < PAIR_PERMILLE) {
+    const a = crypto.randomInt(SYMBOL_COUNT);
+    let b; do { b = crypto.randomInt(SYMBOL_COUNT); } while (b === a);
+    return { kind: 'pair', mult: PAIR_MULT, reels: shuffle([a, a, b]) };
+  }
+  const pool = shuffle([...Array(SYMBOL_COUNT).keys()]);
+  return { kind: 'miss', mult: 0, reels: pool.slice(0, 3) };
 }
 
 // ---------- 저장소 ----------
@@ -87,9 +99,10 @@ function redisStore() {
 function ensureGame(u) {
   if (u.gv !== GAME_VERSION) { // 새 게임 규칙: 코인과 기록을 처음 상태로
     u.gv = GAME_VERSION; u.chips = START_CHIPS;
-    u.stats = { spins: 0, wagered: 0, won: 0, biggestWin: 0, jackpots: 0 };
+    u.stats = { spins: 0, wagered: 0, won: 0, biggestWin: 0, jackpots: 0, pairs: 0 };
     u.history = [];
   }
+  if (u.stats.pairs === undefined) u.stats.pairs = 0;
   return u;
 }
 
@@ -217,7 +230,7 @@ async function handle(req, res) {
     }
 
     if (req.method === 'GET' && url === '/api/roulette/config')
-      return send(res, 200, { winOdds: WIN_ODDS, payoutMult: PAYOUT_MULT, minBet: MIN_BET, maxBet: MAX_BET, symbols: SYMBOL_COUNT });
+      return send(res, 200, { winOdds: WIN_ODDS, payoutMult: PAYOUT_MULT, pairMult: PAIR_MULT, pairChance: PAIR_CHANCE, minBet: MIN_BET, maxBet: MAX_BET, symbols: SYMBOL_COUNT });
 
     if (req.method === 'POST' && url === '/api/roulette/spin') {
       let body;
@@ -231,15 +244,16 @@ async function handle(req, res) {
         ensureGame(u);
         if (bet > u.chips) return { code: 400, body: { error: '코인이 부족합니다.' } };
         const r = drawSpin();
-        const payout = r.win ? bet * PAYOUT_MULT : 0, delta = payout - bet;
+        const payout = bet * r.mult, delta = payout - bet;
         u.chips += delta;
         u.stats.spins++; u.stats.wagered += bet; u.stats.won += payout;
         if (delta > u.stats.biggestWin) u.stats.biggestWin = delta;
-        if (r.win) u.stats.jackpots++;
-        u.history.unshift({ t: new Date().toISOString(), game: 'roulette', bet, mult: r.win ? PAYOUT_MULT : 0, delta });
+        if (r.kind === 'jackpot') u.stats.jackpots++;
+        if (r.kind === 'pair') u.stats.pairs++;
+        u.history.unshift({ t: new Date().toISOString(), game: 'roulette', bet, mult: r.mult, delta });
         u.history.length = Math.min(u.history.length, HISTORY_MAX);
         await store.put(s.key, u);
-        return { code: 200, body: { reels: r.reels, win: r.win, mult: r.win ? PAYOUT_MULT : 0, bet, payout, delta, chips: u.chips, jackpot: r.win } };
+        return { code: 200, body: { reels: r.reels, kind: r.kind, mult: r.mult, bet, payout, delta, chips: u.chips, jackpot: r.kind === 'jackpot' } };
       });
       return send(res, out.code, out.body);
     }
