@@ -14,25 +14,17 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const ID_RE = /^[\p{L}\p{N}_]+$/u; // 글자·숫자·_ (길이 제한 없음, 공백 불가)
 
 // ---------- 게임 설정 ----------
-const START_CHIPS = 10000, REFILL_CHIPS = 1000;
-const MIN_BET = 100, MAX_BET = 100000, HISTORY_MAX = 30;
-// 777 룰렛 배당: weight 합계 = 10000, 환수율(RTP) = 89.54%
-const ROULETTE_TOTAL = 10000;
-const ROULETTE = [
-  { mult: 0,   weight: 5018 },
-  { mult: 0.5, weight: 2200 },
-  { mult: 1,   weight: 1100 },
-  { mult: 2,   weight: 900 },
-  { mult: 3,   weight: 450 },
-  { mult: 5,   weight: 250 },
-  { mult: 10,  weight: 80 },
-  { mult: 777, weight: 2 }
-];
-if (ROULETTE.reduce((a, o) => a + o.weight, 0) !== ROULETTE_TOTAL) throw new Error('룰렛 확률 합계 오류');
-function drawRoulette() {
-  let n = crypto.randomInt(ROULETTE_TOTAL);
-  for (const o of ROULETTE) { if (n < o.weight) return o; n -= o.weight; }
-  return ROULETTE[0];
+const START_CHIPS = 1000, REFILL_CHIPS = 1000; // 가입 시 1,000 코인
+const MIN_BET = 10, MAX_BET = 100000, HISTORY_MAX = 30;
+const GAME_VERSION = 2; // 게임 규칙이 바뀌면 올려서 모두 새로 시작
+// 777 룰렛(슬롯): 릴 3개가 모두 7이면 당첨. 확률 1/999, 지급 = 베팅액 x 50
+const WIN_ODDS = 999, PAYOUT_MULT = 50, SYMBOL_COUNT = 6; // 심볼 0 = '7'
+function drawSpin() {
+  if (crypto.randomInt(WIN_ODDS) === 0) return { win: true, reels: [0, 0, 0] };
+  let reels;
+  do { reels = [0, 0, 0].map(() => crypto.randomInt(SYMBOL_COUNT)); }
+  while (reels[0] === reels[1] && reels[1] === reels[2]); // 꽝일 때 세 개가 모두 같은 모양이 되지 않게
+  return { win: false, reels };
 }
 
 // ---------- 저장소 ----------
@@ -93,9 +85,11 @@ function redisStore() {
 }
 
 function ensureGame(u) {
-  if (typeof u.chips !== 'number') u.chips = START_CHIPS;
-  if (!u.stats) u.stats = { spins: 0, wagered: 0, won: 0, biggestWin: 0, jackpots: 0 };
-  if (!Array.isArray(u.history)) u.history = [];
+  if (u.gv !== GAME_VERSION) { // 새 게임 규칙: 코인과 기록을 처음 상태로
+    u.gv = GAME_VERSION; u.chips = START_CHIPS;
+    u.stats = { spins: 0, wagered: 0, won: 0, biggestWin: 0, jackpots: 0 };
+    u.history = [];
+  }
   return u;
 }
 
@@ -223,29 +217,29 @@ async function handle(req, res) {
     }
 
     if (req.method === 'GET' && url === '/api/roulette/config')
-      return send(res, 200, { outcomes: ROULETTE, total: ROULETTE_TOTAL, minBet: MIN_BET, maxBet: MAX_BET });
+      return send(res, 200, { winOdds: WIN_ODDS, payoutMult: PAYOUT_MULT, minBet: MIN_BET, maxBet: MAX_BET, symbols: SYMBOL_COUNT });
 
     if (req.method === 'POST' && url === '/api/roulette/spin') {
       let body;
       try { body = await readJson(req); } catch { return send(res, 400, { error: '잘못된 요청입니다.' }); }
       const bet = body.bet;
       if (!Number.isInteger(bet) || bet < MIN_BET || bet > MAX_BET)
-        return send(res, 400, { error: `베팅은 ${fmt(MIN_BET)} ~ ${fmt(MAX_BET)} 칩 사이여야 합니다.` });
+        return send(res, 400, { error: `베팅은 ${fmt(MIN_BET)} ~ ${fmt(MAX_BET)} 코인 사이여야 합니다.` });
       const out = await withLock(s.key, async () => {
         const u = await store.get(s.key);
         if (!u) return { code: 401, body: { error: '계정을 찾을 수 없습니다. 다시 로그인해 주세요.' } };
         ensureGame(u);
-        if (bet > u.chips) return { code: 400, body: { error: '칩이 부족합니다.' } };
-        const o = drawRoulette();
-        const payout = Math.floor(bet * o.mult), delta = payout - bet;
+        if (bet > u.chips) return { code: 400, body: { error: '코인이 부족합니다.' } };
+        const r = drawSpin();
+        const payout = r.win ? bet * PAYOUT_MULT : 0, delta = payout - bet;
         u.chips += delta;
         u.stats.spins++; u.stats.wagered += bet; u.stats.won += payout;
         if (delta > u.stats.biggestWin) u.stats.biggestWin = delta;
-        if (o.mult === 777) u.stats.jackpots++;
-        u.history.unshift({ t: new Date().toISOString(), game: 'roulette', bet, mult: o.mult, delta });
+        if (r.win) u.stats.jackpots++;
+        u.history.unshift({ t: new Date().toISOString(), game: 'roulette', bet, mult: r.win ? PAYOUT_MULT : 0, delta });
         u.history.length = Math.min(u.history.length, HISTORY_MAX);
         await store.put(s.key, u);
-        return { code: 200, body: { mult: o.mult, bet, payout, delta, chips: u.chips, jackpot: o.mult === 777 } };
+        return { code: 200, body: { reels: r.reels, win: r.win, mult: r.win ? PAYOUT_MULT : 0, bet, payout, delta, chips: u.chips, jackpot: r.win } };
       });
       return send(res, out.code, out.body);
     }
@@ -255,7 +249,7 @@ async function handle(req, res) {
         const u = await store.get(s.key);
         if (!u) return { code: 401, body: { error: '계정을 찾을 수 없습니다. 다시 로그인해 주세요.' } };
         ensureGame(u);
-        if (u.chips >= MIN_BET) return { code: 400, body: { error: '아직 칩이 남아 있습니다.' } };
+        if (u.chips >= MIN_BET) return { code: 400, body: { error: '아직 코인이 남아 있습니다.' } };
         u.chips = REFILL_CHIPS;
         await store.put(s.key, u);
         return { code: 200, body: { chips: u.chips } };
