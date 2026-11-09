@@ -47,7 +47,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 @media (max-width:480px){.play{padding:9px 4px 9px 12px;font-size:12px}.game.soon .play{padding:8px 8px;font-size:10px}}
 
 .me h2{font-family:var(--serif);letter-spacing:.3em;font-size:14px;color:var(--gold-hi);text-align:center;margin-bottom:16px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
 .stat{text-align:center;padding:12px 4px;border:1px solid rgba(212,175,55,.3);background:rgba(0,0,0,.4)}
 .stat b{display:block;font-family:var(--serif);font-size:clamp(16px,4.4vw,24px);color:var(--gold-hi);word-break:break-all}
 .stat span{display:block;margin-top:4px;font-size:11px;letter-spacing:.14em;color:#9d8e72}
@@ -60,6 +60,8 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 .hist .m.jp{background:var(--burg);color:#fff;border-color:var(--gold-hi)}
 .hist .d{min-width:74px;text-align:right;font-family:var(--serif);font-weight:700}
 .d.up{color:#f6e3a1}.d.down{color:#ff8a9a}.d.even{color:#b9a98b}
+.hist .m.pr{border-color:var(--gold);background:rgba(212,175,55,.15)}
+@media (max-width:480px){.stat span{letter-spacing:.04em;font-size:10px}.stats{gap:6px}}
 .empty{text-align:center;color:#9d8e72;font-size:14px;padding:10px 0}
 </style>
 </head>
@@ -83,7 +85,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
   <section class="list" id="list-luck" role="tabpanel" aria-labelledby="tab-luck">
     <a class="game" href="/roulette">
       <span class="slot-ico" aria-hidden="true"><i>7</i><i>7</i><i>7</i></span>
-      <div><h3 class="gold-text">777 ROULETTE</h3><p>릴 3개가 모두 7이면 잭팟! 베팅액의 50배를 받아요. (확률 1/999)</p></div>
+      <div><h3 class="gold-text">777 ROULETTE</h3><p>릴 3개가 모두 7이면 잭팟 ×50 (1/777)! 같은 모양이 2개만 나와도 ×3을 받아요.</p></div>
       <span class="play">PLAY ›</span>
     </a>
   </section>
@@ -99,9 +101,10 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
   <section class="panel me" aria-label="내 기록">
     <h2>MY RECORD</h2>
     <div class="stats">
-      <div class="stat"><b id="s-spins">0</b><span>TOTAL SPINS</span></div>
+      <div class="stat"><b id="s-spins">0</b><span>SPINS</span></div>
       <div class="stat"><b id="s-big">0</b><span>BEST WIN</span></div>
       <div class="stat"><b id="s-jp">0</b><span>777 HITS</span></div>
+      <div class="stat"><b id="s-pair">0</b><span>PAIRS</span></div>
     </div>
     <ul class="hist" id="hist"></ul>
   </section>
@@ -127,13 +130,13 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 
   function row(h) {
     var li = document.createElement('li');
-    var jp = h.mult > 0, cls = h.delta > 0 ? 'up' : h.delta < 0 ? 'down' : 'even';
+    var jp = h.mult >= 50, pr = h.mult > 0 && !jp, cls = h.delta > 0 ? 'up' : h.delta < 0 ? 'down' : 'even';
     var sign = h.delta > 0 ? '+' : h.delta < 0 ? '−' : '±';
     li.innerHTML =
       '<div class="g"><span>777 ROULETTE</span><small></small></div>' +
-      '<span class="m' + (jp ? ' jp' : '') + '"></span><span class="d ' + cls + '"></span>';
+      '<span class="m' + (jp ? ' jp' : pr ? ' pr' : '') + '"></span><span class="d ' + cls + '"></span>';
     li.querySelector('small').textContent = RP.ago(h.t) + ' · BET ' + RP.fmt(h.bet);
-    li.querySelector('.m').textContent = jp ? '777' : 'MISS';
+    li.querySelector('.m').textContent = jp ? '777' : pr ? 'PAIR' : 'MISS';
     li.querySelector('.d').textContent = sign + RP.fmt(Math.abs(h.delta));
     return li;
   }
@@ -143,6 +146,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
     $('#s-spins').textContent = RP.fmt(p.stats.spins);
     $('#s-big').textContent = RP.fmt(p.stats.biggestWin);
     $('#s-jp').textContent = RP.fmt(p.stats.jackpots);
+    $('#s-pair').textContent = RP.fmt(p.stats.pairs || 0);
     var ul = $('#hist');
     if (!p.history.length) {
       ul.innerHTML = '<li class="empty">아직 플레이 기록이 없습니다. 첫 게임을 시작해 보세요!</li>';
