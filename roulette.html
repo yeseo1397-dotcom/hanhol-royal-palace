@@ -49,7 +49,7 @@
 .cell.s7{color:#c0182f;-webkit-text-stroke:2px #5a0b19;text-shadow:0 3px 0 rgba(0,0,0,.35)}
 .cell.red{color:#b3122a}
 .cell.sbar span{font-size:calc(var(--cell) * .21);letter-spacing:.06em;padding:2px 5px 2px 7px;border:2px solid #14090a;border-radius:4px;background:#fff7dc;color:#14090a}
-.win .reel{animation:glow .5s ease-in-out 6 alternate}
+.reel.hl{animation:glow .5s ease-in-out 8 alternate}
 @keyframes glow{to{box-shadow:inset 0 0 0 2px #000,inset 0 0 18px rgba(0,0,0,.5),0 0 24px 4px rgba(246,227,161,.9)}}
 
 .leds{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
@@ -103,6 +103,7 @@
 .dots{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;min-height:30px}
 .dot{min-width:46px;padding:4px 8px;font-family:var(--serif);font-weight:700;font-size:12px;border:1px solid rgba(212,175,55,.3);color:#7d705b;background:rgba(0,0,0,.45)}
 .dot.jp{background:var(--burg);color:#fff;border-color:var(--gold-hi)}
+.dot.pr{color:var(--gold-hi);border-color:var(--gold);background:rgba(212,175,55,.14)}
 .foot{margin-top:22px;text-align:center;font-size:12px;color:#7d705b;line-height:1.6}
 
 .jackpot{position:fixed;inset:0;z-index:40;display:grid;place-items:center;text-align:center;padding:20px;
@@ -117,7 +118,7 @@
 @keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
 @keyframes fadein{from{opacity:0}}
 @keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
-@media (prefers-reduced-motion:reduce){.bulbs,.jackpot .big,.machine.hit .plate,.win .reel{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.bulbs,.jackpot .big,.machine.hit .plate,.reel.hl{animation:none!important}}
 </style>
 </head>
 <body>
@@ -167,12 +168,12 @@
     <summary>RULES · 규칙과 확률</summary>
     <div class="in">
       <dl>
-        <dt>당첨 조건</dt><dd>릴 3개 모두 7</dd>
-        <dt>당첨 확률</dt><dd id="p-odds">–</dd>
-        <dt>당첨 시 지급</dt><dd id="p-mult">–</dd>
+        <dt>777 (릴 3개 모두 7)</dt><dd id="p-jp">–</dd>
+        <dt>같은 모양 2개</dt><dd id="p-pair">–</dd>
+        <dt>그 외</dt><dd>꽝 (세 모양이 모두 다름)</dd>
         <dt>기대 환수율</dt><dd id="p-rtp">–</dd>
       </dl>
-      <p class="note">결과는 서버에서 무작위로 정해집니다. 7이 아닌 모양은 세 개가 모두 같아도 당첨이 아닙니다.</p>
+      <p class="note">결과는 서버에서 무작위로 정해집니다. 같은 모양이 3개 나오는 경우는 777뿐입니다.</p>
     </div>
   </details>
 
@@ -265,8 +266,8 @@
     if (!recent.length) { box.innerHTML = '<span class="dot">–</span>'; return; }
     recent.slice(0, 10).forEach(function (h) {
       var s = document.createElement('span');
-      s.className = 'dot' + (h.win ? ' jp' : '');
-      s.textContent = h.win ? '777' : 'MISS';
+      s.className = 'dot' + (h.kind === 'jackpot' ? ' jp' : h.kind === 'pair' ? ' pr' : '');
+      s.textContent = h.kind === 'jackpot' ? '777' : h.kind === 'pair' ? 'PAIR' : 'MISS';
       box.appendChild(s);
     });
   }
@@ -286,22 +287,30 @@
       setTimeout(function (n) { n.remove(); }, 7000, c);
     }
   }
+  function pairIdx(r) {
+    for (var i = 0; i < 3; i++) for (var j = i + 1; j < 3; j++) if (r[i] === r[j]) return [i, j];
+    return [];
+  }
+  function highlight(list) { list.forEach(function (k) { reels[k].classList.add('hl'); }); }
   function reveal(d) {
     chips = d.chips;
     RP.setChips(chips);
     $('#led-win').textContent = RP.fmt(d.payout);
-    if (d.win) {
+    if (d.kind === 'jackpot') {
       setResult('win', '777 JACKPOT!  ×' + d.mult, '+' + RP.fmt(d.delta) + ' COINS');
-      $('#machine').classList.add('hit'); $('#machine').closest('.machine-wrap').classList.add('win');
+      highlight([0, 1, 2]); $('#machine').classList.add('hit');
+    } else if (d.kind === 'pair') {
+      setResult('win', 'PAIR!  ×' + d.mult, '+' + RP.fmt(d.delta) + ' COINS');
+      highlight(pairIdx(d.reels));
     } else {
       setResult('lose', 'MISS', '−' + RP.fmt(d.bet) + ' COINS');
     }
-    recent.unshift({ win: d.win });
+    recent.unshift({ kind: d.kind });
     renderRecent();
     busy = false;
     normalizeBet();
     renderControls();
-    if (d.win) {
+    if (d.jackpot) {
       $('#jp-amt').textContent = '+' + RP.fmt(d.delta) + ' COINS';
       $('#jp-mult').textContent = '베팅 ' + RP.fmt(d.bet) + ' × ' + d.mult + ' = ' + RP.fmt(d.payout) + ' 지급';
       $('#jackpot').hidden = false;
@@ -339,7 +348,8 @@
     var bet = currentBet();
     if (bet < cfg.minBet || bet > chips) return;
     busy = true; renderControls(); pull();
-    $('#machine').classList.remove('hit'); $('#machine').closest('.machine-wrap').classList.remove('win');
+    $('#machine').classList.remove('hit');
+    reels.forEach(function (r) { r.classList.remove('hl'); });
     $('#led-win').textContent = '0';
     setResult('idle', '릴이 돌아갑니다…');
     RP.api('/api/roulette/spin', { bet: bet }).then(function (r) {
@@ -377,10 +387,12 @@
     var p = v[0], c = v[1];
     if (!c.ok) { setResult('err', '게임 설정을 불러오지 못했습니다.'); return; }
     cfg = c.d; chips = p.chips;
-    recent = (p.history || []).filter(function (h) { return h.game === 'roulette'; }).map(function (h) { return { win: h.mult > 0 }; });
-    $('#p-odds').textContent = '1 / ' + RP.fmt(cfg.winOdds) + ' (' + (100 / cfg.winOdds).toFixed(2) + '%)';
-    $('#p-mult').textContent = '베팅액 × ' + cfg.payoutMult;
-    $('#p-rtp').textContent = (cfg.payoutMult / cfg.winOdds * 100).toFixed(2) + '%';
+    recent = (p.history || []).filter(function (h) { return h.game === 'roulette'; }).map(function (h) {
+      return { kind: h.mult >= cfg.payoutMult ? 'jackpot' : h.mult > 0 ? 'pair' : 'miss' };
+    });
+    $('#p-jp').textContent = '1 / ' + RP.fmt(cfg.winOdds) + ' (' + (100 / cfg.winOdds).toFixed(2) + '%) · ×' + cfg.payoutMult;
+    $('#p-pair').textContent = '약 ' + Math.round(cfg.pairChance * 100) + '% · ×' + cfg.pairMult;
+    $('#p-rtp').textContent = ((cfg.payoutMult / cfg.winOdds + cfg.pairChance * cfg.pairMult) * 100).toFixed(1) + '%';
     normalizeBet();
     renderRecent();
     renderControls();
