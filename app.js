@@ -21,7 +21,7 @@
     '<rect x="10" y="64" width="100" height="9" rx="2" fill="url(#cg2)" stroke="#f6e3a1" stroke-width="2"/>' +
     '<circle cx="60" cy="8" r="5" fill="#9b1b30"/></svg>ROYAL PALACE</a>' +
     '<div class="bar-right"><span class="who" id="rp-who"></span>' +
-    '<span class="chips" title="보유 칩"><i class="chip-ico"></i><b id="rp-chips">–</b></span>' +
+    '<span class="chips" title="보유 코인"><i class="chip-ico"></i><b id="rp-chips">–</b></span>' +
     '<button class="mini" id="rp-out" type="button">LOGOUT</button></div></header>';
 
   document.body.insertAdjacentHTML('afterbegin', STAGE + BAR);
