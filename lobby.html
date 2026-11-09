@@ -32,11 +32,10 @@
   border:1px solid rgba(212,175,55,.5);background:linear-gradient(90deg,rgba(107,15,31,.4),rgba(10,6,6,.88));
   transition:transform .15s,box-shadow .25s,border-color .2s}
 a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--gold-hi);outline:none;box-shadow:0 10px 34px rgba(0,0,0,.6),0 0 30px rgba(212,175,55,.2)}
-.wheel-ico{position:relative;flex:none;width:clamp(58px,15vw,86px);aspect-ratio:1;border-radius:50%;border:3px solid var(--gold);
-  background:conic-gradient(#6b0f1f 0 10%,#150e0e 0 20%,#8a6a1c 0 30%,#150e0e 0 40%,#6b0f1f 0 50%,#150e0e 0 60%,#d4af37 0 70%,#150e0e 0 80%,#6b0f1f 0 90%,#f6e3a1 0 100%);
-  box-shadow:0 0 18px rgba(212,175,55,.35)}
-.wheel-ico::after{content:"7";position:absolute;inset:32%;border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-weight:700;
-  color:#6b0f1f;background:radial-gradient(circle at 35% 30%,#f6e3a1,#b8922a);border:1px solid #fff3c4;font-size:clamp(12px,3vw,18px)}
+.slot-ico{flex:none;width:clamp(78px,20vw,108px);display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:6px;border:3px solid var(--gold);border-radius:8px;
+  background:linear-gradient(180deg,#8f1429,#35060f);box-shadow:0 0 18px rgba(212,175,55,.35)}
+.slot-ico i{display:grid;place-items:center;aspect-ratio:.8;border-radius:3px;font-style:normal;font-family:var(--serif);font-weight:900;font-size:clamp(18px,5vw,28px);
+  color:#c0182f;-webkit-text-stroke:1px #5a0b19;background:linear-gradient(180deg,#e9dcc0,#fffaf0 50%,#e9dcc0)}
 .lock-ico{flex:none;width:clamp(58px,15vw,86px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-size:clamp(24px,6vw,34px);
   color:var(--gold);border:2px dashed rgba(212,175,55,.5);background:rgba(0,0,0,.4)}
 .game h3{font-family:var(--serif);letter-spacing:.16em;font-size:clamp(15px,4vw,22px)}
@@ -83,8 +82,8 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 
   <section class="list" id="list-luck" role="tabpanel" aria-labelledby="tab-luck">
     <a class="game" href="/roulette">
-      <span class="wheel-ico" aria-hidden="true"></span>
-      <div><h3 class="gold-text">777 ROULETTE</h3><p>휠을 돌려 배당을 노리세요. 777에 멈추면 잭팟 ×777!</p></div>
+      <span class="slot-ico" aria-hidden="true"><i>7</i><i>7</i><i>7</i></span>
+      <div><h3 class="gold-text">777 ROULETTE</h3><p>릴 3개가 모두 7이면 잭팟! 베팅액의 50배를 받아요. (확률 1/999)</p></div>
       <span class="play">PLAY ›</span>
     </a>
   </section>
@@ -102,7 +101,7 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
     <div class="stats">
       <div class="stat"><b id="s-spins">0</b><span>TOTAL SPINS</span></div>
       <div class="stat"><b id="s-big">0</b><span>BEST WIN</span></div>
-      <div class="stat"><b id="s-jp">0</b><span>777 JACKPOT</span></div>
+      <div class="stat"><b id="s-jp">0</b><span>777 HITS</span></div>
     </div>
     <ul class="hist" id="hist"></ul>
   </section>
@@ -128,13 +127,13 @@ a.game:hover,a.game:focus-visible{transform:translateY(-2px);border-color:var(--
 
   function row(h) {
     var li = document.createElement('li');
-    var jp = h.mult === 777, cls = h.delta > 0 ? 'up' : h.delta < 0 ? 'down' : 'even';
+    var jp = h.mult > 0, cls = h.delta > 0 ? 'up' : h.delta < 0 ? 'down' : 'even';
     var sign = h.delta > 0 ? '+' : h.delta < 0 ? '−' : '±';
     li.innerHTML =
       '<div class="g"><span>777 ROULETTE</span><small></small></div>' +
       '<span class="m' + (jp ? ' jp' : '') + '"></span><span class="d ' + cls + '"></span>';
     li.querySelector('small').textContent = RP.ago(h.t) + ' · BET ' + RP.fmt(h.bet);
-    li.querySelector('.m').textContent = jp ? '777' : '×' + h.mult;
+    li.querySelector('.m').textContent = jp ? '777' : 'MISS';
     li.querySelector('.d').textContent = sign + RP.fmt(Math.abs(h.delta));
     return li;
   }
